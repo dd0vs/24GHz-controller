@@ -1,4 +1,8 @@
 // 24GHZ-Controller-w-o-int
+// new 24GHz-Controller-remote
+// DD0VS
+// 11.05.2021
+// Maintenance
 // Send
 //Funktion:
 // setup: 
@@ -27,7 +31,11 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
-  
+#include <EEPROM.h>
+
+/* Set the delay between fresh samples */
+#define BNO055_SAMPLERATE_DELAY_MS (100)
+
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 
 INA219 ina219_A;
@@ -69,10 +77,41 @@ int iGyro=0;
 int iAccel=0;
 int iMag=0;
 
+/**************************************************************************/
+/*
+    Display the raw calibration offset and radius data
+    */
+/**************************************************************************/
+void displaySensorOffsets(const adafruit_bno055_offsets_t &calibData)
+{
+    Serial.print("Accelerometer: ");
+    Serial.print(calibData.accel_offset_x); Serial.print(" ");
+    Serial.print(calibData.accel_offset_y); Serial.print(" ");
+    Serial.print(calibData.accel_offset_z); Serial.print(" ");
+
+    Serial.print("\nGyro: ");
+    Serial.print(calibData.gyro_offset_x); Serial.print(" ");
+    Serial.print(calibData.gyro_offset_y); Serial.print(" ");
+    Serial.print(calibData.gyro_offset_z); Serial.print(" ");
+
+    Serial.print("\nMag: ");
+    Serial.print(calibData.mag_offset_x); Serial.print(" ");
+    Serial.print(calibData.mag_offset_y); Serial.print(" ");
+    Serial.print(calibData.mag_offset_z); Serial.print(" ");
+
+    Serial.print("\nAccel Radius: ");
+    Serial.print(calibData.accel_radius);
+
+    Serial.print("\nMag Radius: ");
+    Serial.print(calibData.mag_radius);
+}
+
 void setup()
 {
   Serial.begin(9600);
-  Serial.println("System Startup - Sender");
+  Serial.println(F("System Startup - Sender"));
+  Serial.println(F("24GHz controller - remote"));
+  Serial.println(F("--------------------------"));
 
   RS485_Begin(28800);
   ina219_A.begin();
@@ -91,6 +130,41 @@ void setup()
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
     while(1);
   }
+
+    int eeAddress = 0;
+    long bnoID;
+    bool foundCalib = false;
+
+    EEPROM.get(eeAddress, bnoID);
+
+    adafruit_bno055_offsets_t calibrationData;
+    sensor_t sensor;
+
+    /*
+    *  Look for the sensor's unique ID at the beginning oF EEPROM.
+    *  This isn't foolproof, but it's better than nothing.
+    */
+    bno.getSensor(&sensor);
+    if (bnoID != sensor.sensor_id)
+    {
+        Serial.println("\nNo Calibration Data for this sensor exists in EEPROM");
+        delay(500);
+    }
+    else
+    {
+        Serial.println("\nFound Calibration for this sensor in EEPROM.");
+        eeAddress += sizeof(long);
+        EEPROM.get(eeAddress, calibrationData);
+
+        displaySensorOffsets(calibrationData);
+
+        Serial.println("\n\nRestoring Calibration data to the BNO055...");
+        bno.setSensorOffsets(calibrationData);
+
+        Serial.println("\n\nCalibration data loaded into BNO055");
+        foundCalib = true;
+    }
+
 
   for (int i = 0; i <= 10; i++) {
     state13=!state13;  
