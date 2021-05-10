@@ -3,6 +3,9 @@
 // DD0VS
 // 11.05.2021
 // Maintenance
+// use Adafruit restore_offsets example to calibrate the sensor and store it
+// https://github.com/adafruit/Adafruit_BNO055/tree/master/examples/restore_offsets
+//
 // Send
 //Funktion:
 // setup: 
