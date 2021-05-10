@@ -26,6 +26,9 @@
 // 2. TX Überwachung wenn TX, dann TX-LED ein und HIGH to LOW für TX Relay
 // 3. 10MHz Lock-Überwachung, wenn Lock, dann Lock LED ein
 // 4. sende den Zustand alle eine (1) Sekunde im Empfangsfall, sonst all 1/4 Sekunde
+
+#include "mydelay.h"
+
 #include <RS485.h>
 #include <SoftwareSerial.h>
 #include <INA219.h>
