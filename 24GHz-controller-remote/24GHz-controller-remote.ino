@@ -179,7 +179,7 @@ void setup()
     digitalWrite(ledpin2,state12);
     state11=!state11;  
     digitalWrite(ledpin3,state11);
-    delay(200);    
+    myDelay(200);    
   }
 
   //delay(1000);
@@ -188,9 +188,8 @@ void setup()
 
 }
 
-void loop()
-{
-  delay(1000);  
+// read U I and Monitorvoltage (forward power monitor)
+void readUIM(){
   //read ub
   ub = ina219_A.busVoltage();
   ib = ina219_A.shuntCurrent();
@@ -206,16 +205,20 @@ void loop()
   Serial.print(ib,1);
   Serial.print("um:");
   Serial.print(um,1);
- 
+  }
 
-  
+void togglePowerLED() {
   state13=!state13;  
   digitalWrite(ledpin,state13);
   //state12=!state12;  
   //digitalWrite(ledpin2,state12);
   //state11=!state11;  
-  //digitalWrite(ledpin3,state11);
-  
+  //digitalWrite(ledpin3,state11);  
+}
+
+
+//read TX and set LED and Messge char
+void readTX(){
   state10 = digitalRead(inputpintx);
   //Serial.println(state10);
   digitalWrite(ledpin2,state10);
@@ -224,8 +227,11 @@ void loop()
     }
    else {
     rxtx = 'R';
-    }
-    
+    }  
+}
+
+// readLock and set LED and Message char
+void readLock(){
   state08 = digitalRead(inputpinlck);
   //Serial.println(state08);
   digitalWrite(ledpin3,state08);
@@ -234,9 +240,11 @@ void loop()
     }
    else {
     lck = 'U';
-    }
+    }  
+}
 
-  
+//  readBNOevent();
+void readBNOevent() {
   /* Get a new sensor event */ 
   sensors_event_t event; 
   bno.getEvent(&event);
@@ -258,24 +266,59 @@ void loop()
   dtostrf(fX,5,1,sX);
   dtostrf(fY,3,1,sY);
   dtostrf(abs(fZ),3,1,sZ);
+}
+
+//  compileMessage();
+void  compileMessage() {
   //             "Msg12345678901234567"
   //               "1234567890123456"
   //strcpy(Message,"12.3V 0.3A RX0.1");
   //sprintf(Message,"%sV %sA %c%c%sX%s Y%s Z%s",sub,sib,rxtx,lck,sum,sX,sY,sZ);
   sprintf(Message,"%sV %sA %c%c%s",sub,sib,rxtx,lck,sum);
-  sprintf(Message2,"X%sZ%s %d%d%d%d",sX,sZ,iSys,iGyro,iAccel,iMag);
-  
+  sprintf(Message2,"X%sZ%s %d%d%d%d",sX,sZ,iSys,iGyro,iAccel,iMag);  
+}
+
+// send message 1
+void sendMSG1() {
   if(RS485_SendMessage(Message,fWrite,ENABLE_PIN))
   {
     Serial.print("Sending:");
     Serial.print(Message);
-  }  
-  delay(100);
+  }    
+}
+
+// send message 2
+void sendMSG2() {
   if(RS485_SendMessage(Message2,fWrite,ENABLE_PIN))
   {
     Serial.print(" Sending2:");
     Serial.print(Message2);
   }  
+}
+
+// Main Loop
+void loop()
+{
+  delay(1000);  
+
+  readUIM();
+ 
+  togglePowerLED();
+  
+  readTX();
+    
+  readLock();
+
+  readBNOevent();
+
+  compileMessage();
+
+  sendMSG1();
+  
+  delay(100);
+
+  sendMSG2();
+  
   displayCalStatus();
 }
 
